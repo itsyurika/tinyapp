@@ -16,9 +16,9 @@ const urlDatabase = {
 
 function generateRandomString() {
   // or can use Math.random().toString(36).replace(/[^a-z0-9]+/g, '').substring(0, 6);
-  const randomString = "";
-  const charactersSet = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const setLength = charactersSet.length;
+  let randomString = "";
+  const characterSet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const setLength = characterSet.length;
   for (let i = 0; i < 7; i++) {
     randomString += characterSet.charAt(Math.floor(Math.random() * setLength));
   }
@@ -42,7 +42,10 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  const newShortURL = generateRandomString();
+  urlDatabase[newShortURL] = req.body.longURL;
+  console.log(urlDatabase);
+  res.redirect(`/urls/${newShortURL}`);         // Respond with 'Ok' (we will replace this)
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -53,6 +56,11 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL];
+  res.redirect(longURL);
+});
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}!`);
