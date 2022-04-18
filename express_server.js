@@ -11,8 +11,9 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+app.get("/hello", (req, res) => {
+  const templateVars = { greeting: 'Hello World!' };
+  res.render("hello_world", templateVars);
 });
 
 app.get("/urls.json", (req, res) => {
@@ -21,4 +22,8 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
