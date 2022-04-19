@@ -19,9 +19,9 @@
       </div>
     </div>
     <div>
-      <% if(username){ %>
+      <% if(user){ %>
         <form class="form-inline" action="/logout" method="POST" name="logout">
-          <h5>Logged in as: <%= username %> </h5>
+          <h5>Logged in as: <%= user.email %> </h5>
         <button
           type="submit"
           class="btn btn-outline-dark btn-sm"
