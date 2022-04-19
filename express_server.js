@@ -3,6 +3,7 @@ const app = express();
 const path = require('path');
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -63,10 +64,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-app.get("/u/:shortURL", (req, res) => {
+app.post("/urls/:shortURL/edit", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
-  res.redirect(longURL);
+  const templateVars = { shortURL, longURL };
+  res.render("urls_show", templateVars);
 });
 
 app.post("/urls/:shortURL/update", (req, res) => {
@@ -75,6 +77,13 @@ app.post("/urls/:shortURL/update", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
+
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL];
+  res.redirect(longURL);
+});
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}!`);
 });

@@ -25,15 +25,27 @@
           <tr>
             <th scope="col">Short URL</th>
             <th scope="col">Long URL</th>
+            <th scope="col">Edit</th>
             <th scope="col">Delete</th>
           </tr>
         </thead>
         <tbody>
           <% for(let url in urls) { %>
-          <form method="POST" action="/urls/<%=url%>/delete">
-            <tr>
-              <td><%= url %></td>
-              <td><%= urls[url] %></td>
+          <tr>
+            <td><%= url %></td>
+            <td><%= urls[url] %></td>
+            <form method="POST" action="/urls/<%=url%>/edit">
+              <td>
+                <button
+                  type="submit"
+                  class="btn btn-outline-info"
+                  name="delete"
+                >
+                  Edit
+                </button>
+              </td>
+            </form>
+            <form method="POST" action="/urls/<%=url%>/delete">
               <td>
                 <button
                   type="submit"
@@ -43,8 +55,8 @@
                   Delete
                 </button>
               </td>
-            </tr>
-          </form>
+            </form>
+          </tr>
           <% } %>
         </tbody>
       </table>
