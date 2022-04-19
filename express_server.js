@@ -39,12 +39,15 @@ function generateRandomString() {
   return randomString;
 }
 
-function isEmailNew(email) {
-  console.log(users);
+function accountCheck(email) {
   for (const user in users) {
-    if (user.email === email) return false;
+    console.log("printing checking user's email: ", users[user]['email']);
+    if (users[user]['email'] === email) {
+      console.log("match found: ", user);
+      return users[user];
+    }
   }
-  return true;
+  return false;
 }
 
 
@@ -54,7 +57,6 @@ app.get("/", (req, res) => {
 
 // register route
 app.get("/register", (req, res) => {
-  console.log("at register page: ", users);
   const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
   res.render("urls_registration", templateVars);
 });
@@ -62,26 +64,39 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   if (email === "" || password === "") {
-    console.log(users);
-    return res.status(400).send("please provide a valid email and address");
+    return res.status(400).send("Please provide a valid email and address");
   }
-  if (!isEmailNew(email)) {
-    console.log(users);
-    return retres.status(400).send("email already exists");
+  if (!!accountCheck(email)) {
+    console.log("account exists: ", accountCheck(email));
+    console.log("are you printing?: ", users);
+    return res.status(400).send("An account with that email already exists");
   }
   let user_id = generateRandomString();
   users[user_id] = { id: user_id, email: email, password: password };
   console.log("after post: ", users);
   res.cookie('user_id', `${user_id}`);
-  res.redirect("/urls");
+  return res.redirect("/urls");
+
 });
 
 // login routes
 
+app.get("/login", (req, res) => {
+  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
+  res.render("urls_login", templateVars);
+});
+
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie('username', `${username}`);
-  res.redirect("/urls");
+  const { email, password } = req.body;
+  let user = accountCheck(email);
+  console.log(user);
+  if (!user) { return res.status(403).send("e-mail address cannot be found"); }
+  if (user.password === password) {
+    res.cookie('user_id', `${user.id}`);
+    return res.redirect("/urls");
+  }
+  res.status(403).send("password doesn't match");
+
 });
 
 // logout route
