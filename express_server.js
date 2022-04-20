@@ -1,21 +1,21 @@
 const express = require("express");
 const app = express();
-const path = require('path');
 const PORT = 8080; // default port 8080
+const path = require('path');
 const bodyParser = require("body-parser");
+const cookieSession = require('cookie-session');
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcryptjs');
+
+//const password = "purple-monkey-dinosaur"; // found in the req.params object
+// const hashedPassword = bcrypt.hashSync(password, 10);
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(cookieSession());
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, '/views'));
 
-
-//urlDatabse before 
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
 
 const urlDatabase = {
   b6UTxQ: {
@@ -46,10 +46,13 @@ const users = {
   "aJ48lW": {
     id: "aJ48lW",
     email: "sample@testing.com",
-    password: "123"
+    password: bcrypt.hashSync("123", 10)
   }
 
 };
+
+const aJ9lWpassword = bcrypt.hashSync("123", 10);
+console.log(aJ9lWpassword);
 
 function generateRandomString() {
   // or can use Math.random().toString(36).replace(/[^a-z0-9]+/g, '').substring(0, 6);
@@ -72,12 +75,13 @@ function accountCheck(email) {
   return false;
 }
 
-function accountExists(id) {
-  for (const user in users) {
-    if (id === users[user].id) return true;
-  }
-  return false;
-}
+// don't need it.. I think
+// function accountExists(id) {
+//   for (const user in users) {
+//     if (id === users[user].id) return true;
+//   }
+//   return false;
+// }
 
 
 //TODO review and add comments!
@@ -114,8 +118,11 @@ app.post("/register", (req, res) => {
   if (!!accountCheck(email)) {
     return res.status(400).send("An account with that email already exists");
   }
-  let user_id = generateRandomString();
-  users[user_id] = { id: user_id, email: email, password: password };
+  console.log(password);
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  console.log(hashedPassword);
+  const user_id = generateRandomString();
+  users[user_id] = { id: user_id, email: email, password: hashedPassword };
   res.cookie('user_id', `${user_id}`);
   res.redirect(`/urls/${user_id}`);
 
@@ -132,7 +139,7 @@ app.post("/login", (req, res) => {
   const { email, password } = req.body;
   let user = accountCheck(email);
   if (!user) { return res.status(403).send("e-mail address cannot be found"); }
-  if (user.password === password) {
+  if (bcrypt.compareSync(password, user.password)) {
     res.cookie('user_id', `${user.id}`);
     return res.redirect("/urls");
   }
@@ -169,27 +176,23 @@ app.get("/urls/new", (req, res) => { //page with longURL to shortURL conversion 
 });
 
 app.post("/urls", (req, res) => {
-
   if (!users[req.cookies.user_id]) {
     return res.send("Please log in first");
   }
-  console.log(req.body);  // Log the POST request body to the console
   const newShortURL = generateRandomString();
-  urlDatabase[newShortURL] = req.body.longURL;
+  urlDatabase[newShortURL] = { longURL: req.body.longURL, userID: req.cookies.user_id };
   console.log(urlDatabase);
-  res.redirect(`/urls/${newShortURL}`);         // Respond with 'Ok' (we will replace this)
+  res.redirect(`/urls/${req.cookies.user_id}`);         // Respond with 'Ok' (we will replace this)
 });
 
 app.get("/urls/:id", (req, res) => { //TODO display a message if the user is not logged in / id doesn't match. 
+  const urlId = req.params.id;
   const id = req.cookies.user_id;
   if (!id) { return res.send("please log in first!"); }
-  const urlId = req.params.id;
-  if (!urlId) { return res.send("Given ID doesn't exist"); };
+  if (!users[urlId]) { return res.send("Given ID doesn't exist"); };
   const userURLData = urlsForUser(urlId, id);
   if (!userURLData) { return res.send("Unauthorized account access"); }
-  console.log(userURLData);
-  const templateVars = { userURLData, user: users[req.cookies.user_id] };
-  console.log(templateVars);
+  const templateVars = { userURLData: userURLData || {}, user: users[req.cookies.user_id] };
   res.render("urls_index", templateVars);
 });
 
@@ -201,30 +204,32 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+
+// URL Modifications 
+
 app.post("/urls/:shortURL/delete", (req, res) => { // deleting the shortend URL 
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
-  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
-  res.render("urls_index", templateVars);
+  res.redirect(`/urls/${req.cookies.user_id}`);
 });
 
 app.post("/urls/:shortURL/edit", (req, res) => { //edit button on a shortened URL leading individual page
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
+  const longURL = urlDatabase[shortURL].longURL;
   const templateVars = { shortURL, longURL, user: users[req.cookies.user_id] };
   res.render("urls_show", templateVars);
 });
 
 app.post("/urls/:shortURL/update", (req, res) => { //updating the longURL 
   const shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = req.body.newURL;
-  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
-  res.render("urls_index", templateVars);
+  urlDatabase[shortURL].longURL = req.body.newURL;
+  res.redirect(`/urls/${req.cookies.user_id}`);
 });
 
 // shortened URL routes
 
 app.get("/u/:shortURL", (req, res) => {
+  console.log(urlDatabase);
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
