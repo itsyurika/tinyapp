@@ -41,8 +41,7 @@ function generateRandomString() {
 
 function accountCheck(email) {
   for (const user in users) {
-    console.log("printing checking user's email: ", users[user]['email']);
-    if (users[user]['email'] === email) {
+    if (users[user].email === email) {
       console.log("match found: ", user);
       return users[user];
     }
@@ -67,15 +66,12 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Please provide a valid email and address");
   }
   if (!!accountCheck(email)) {
-    console.log("account exists: ", accountCheck(email));
-    console.log("are you printing?: ", users);
     return res.status(400).send("An account with that email already exists");
   }
   let user_id = generateRandomString();
   users[user_id] = { id: user_id, email: email, password: password };
-  console.log("after post: ", users);
   res.cookie('user_id', `${user_id}`);
-  return res.redirect("/urls");
+  res.redirect("/urls");
 
 });
 
@@ -89,7 +85,6 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   let user = accountCheck(email);
-  console.log(user);
   if (!user) { return res.status(403).send("e-mail address cannot be found"); }
   if (user.password === password) {
     res.cookie('user_id', `${user.id}`);
@@ -108,17 +103,24 @@ app.post("/logout", (req, res) => {
 
 // URL routes
 
-app.get("/urls", (req, res) => {
+app.get("/urls", (req, res) => {//index page that displays all urls
   const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
   res.render("urls_index", templateVars);
 });
 
-app.get("/urls/new", (req, res) => {
+app.get("/urls/new", (req, res) => { //page with longURL to shortURL conversion interface
+  if (!users[req.cookies.user_id]) {
+    return res.redirect("/login");
+  }
   const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
   res.render("urls_new", templateVars);
 });
 
-app.post("/urls", (req, res) => { //index page that displays all urls
+app.post("/urls", (req, res) => {
+
+  if (!users[req.cookies.user_id]) {
+    return res.send("Please log in first");
+  }
   console.log(req.body);  // Log the POST request body to the console
   const newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
