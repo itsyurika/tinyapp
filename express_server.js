@@ -187,9 +187,7 @@ app.get("/urls/:id", (req, res) => { //TODO display a message if the user is not
   if (!urlId) { return res.send("Given ID doesn't exist"); };
   const userURLData = urlsForUser(urlId, id);
   if (!userURLData) { return res.send("Unauthorized account access"); }
-  console.log(userURLData);
-  const templateVars = { userURLData, user: users[req.cookies.user_id] };
-  console.log(templateVars);
+  const templateVars = { userURLData: userURLData || {}, user: users[req.cookies.user_id] };
   res.render("urls_index", templateVars);
 });
 
@@ -205,7 +203,7 @@ app.post("/urls/:shortURL/delete", (req, res) => { // deleting the shortend URL
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
-  res.render("urls_index", templateVars);
+  res.redirect(`/urls/${req.cookies.user_id}`);
 });
 
 app.post("/urls/:shortURL/edit", (req, res) => { //edit button on a shortened URL leading individual page
