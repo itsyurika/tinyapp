@@ -30,10 +30,11 @@
           </tr>
         </thead>
         <tbody>
-          <% for(let url in urls) { %>
+          <%= JSON.stringify(locals) %> <% for(let shortURL in
+          JSON.stringify(locals).userURLData) { %>
           <tr>
-            <td><%= url %></td>
-            <td><%= urls[url] %></td>
+            <td><%= shortURL %></td>
+            <td><%= JSON.stringify(locals).userURLData[shortURL] %></td>
             <form method="POST" action="/urls/<%=url%>/edit">
               <td>
                 <button

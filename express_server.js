@@ -10,9 +10,26 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, '/views'));
 
+
+//urlDatabse before 
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com"
+// };
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW"
+  },
+  b2xVn2: {
+    longURL: "http://www.google.com",
+    userID: "aJ48lW"
+  }
 };
 
 const users = {
@@ -25,7 +42,13 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  "aJ48lW": {
+    id: "aJ48lW",
+    email: "sample@testing.com",
+    password: "123"
   }
+
 };
 
 function generateRandomString() {
@@ -47,6 +70,29 @@ function accountCheck(email) {
     }
   }
   return false;
+}
+
+function accountExists(id) {
+  for (const user in users) {
+    if (id === users[user].id) return true;
+  }
+  return false;
+}
+
+
+//TODO review and add comments!
+
+function urlsForUser(urlId, id) { //where id is the url path in urls/:id
+  if (urlId !== id) {// first check if the id of requested id page matches the userID
+    return false;
+  }
+  let userDatabase = {};
+  for (const shortURL in urlDatabase) { //if the path id = userID, then will search through the database to filter URLs
+    if (urlDatabase[shortURL].userID === id) {
+      userDatabase[shortURL] = urlDatabase[shortURL].longURL;
+    }
+  }
+  return userDatabase;
 }
 
 
@@ -71,7 +117,7 @@ app.post("/register", (req, res) => {
   let user_id = generateRandomString();
   users[user_id] = { id: user_id, email: email, password: password };
   res.cookie('user_id', `${user_id}`);
-  res.redirect("/urls");
+  res.redirect(`/urls/${user_id}`);
 
 });
 
@@ -104,8 +150,14 @@ app.post("/logout", (req, res) => {
 // URL routes
 
 app.get("/urls", (req, res) => {//index page that displays all urls
-  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
-  res.render("urls_index", templateVars);
+  const id = req.cookies.user_id;
+  // if (!users[req.cookies.user_id]) {
+  if (!id) {
+    return res.send("<h3>Plase log in first</h3>"); //TODO create urls_noAccess.ejs?
+  }
+  // res.render("urls_index", templateVars);
+  res.redirect(`/urls/${req.cookies.user_id}`);
+  //** should be res.redirect(`/urls/${req.cookies.user_id}`)? */
 });
 
 app.get("/urls/new", (req, res) => { //page with longURL to shortURL conversion interface
@@ -126,6 +178,19 @@ app.post("/urls", (req, res) => {
   urlDatabase[newShortURL] = req.body.longURL;
   console.log(urlDatabase);
   res.redirect(`/urls/${newShortURL}`);         // Respond with 'Ok' (we will replace this)
+});
+
+app.get("/urls/:id", (req, res) => { //TODO display a message if the user is not logged in / id doesn't match. 
+  const id = req.cookies.user_id;
+  if (!id) { return res.send("please log in first!"); }
+  const urlId = req.params.id;
+  if (!urlId) { return res.send("Given ID doesn't exist"); };
+  const userURLData = urlsForUser(urlId, id);
+  if (!userURLData) { return res.send("Unauthorized account access"); }
+  console.log(userURLData);
+  const templateVars = { userURLData, user: users[req.cookies.user_id] };
+  console.log(templateVars);
+  res.render("urls_index", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
@@ -161,7 +226,7 @@ app.post("/urls/:shortURL/update", (req, res) => { //updating the longURL
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
+  const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
 
