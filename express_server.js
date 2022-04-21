@@ -59,15 +59,6 @@ app.post("/register", (req, res) => {
 
 });
 
-//deault setting for non-logged in access - redirect to login
-
-// app.use((req, res, next) => {
-//   if (!req.session.user_id && req.path !== "/login") {
-//     return res.redirect("/login");
-//   }
-//   next();
-// });
-
 // login routes
 
 app.get("/login", (req, res) => {
@@ -139,7 +130,6 @@ app.get("/urls/:shortURL", (req, res) => {
   res.send("The shortened URL doesn't exist");
 
 });
-
 
 // URL Modifications 
 
