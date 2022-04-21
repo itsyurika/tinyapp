@@ -32,6 +32,9 @@ app.get("/", (req, res) => {
 
 // register route
 app.get("/register", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  }
   const templateVars = { urls: urlDatabase, user: users[req.session.user_id] };
   res.render("urls_registration", templateVars);
 });
@@ -58,16 +61,19 @@ app.post("/register", (req, res) => {
 
 //deault setting for non-logged in access - redirect to login
 
-app.use((req, res, next) => {
-  if (!req.session.user_id && req.path !== "/login") {
-    return res.redirect("/login");
-  }
-  next();
-});
+// app.use((req, res, next) => {
+//   if (!req.session.user_id && req.path !== "/login") {
+//     return res.redirect("/login");
+//   }
+//   next();
+// });
 
 // login routes
 
 app.get("/login", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  }
   const templateVars = { urls: urlDatabase, user: users[req.session.user_id] };
   res.render("urls_login", templateVars);
 });
@@ -87,12 +93,15 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req, res) => {
   req.session = null;
-  res.redirect("/login");
+  res.redirect("/urls");
 });
 
 // URL routes
 
 app.get("/urls", (req, res) => {//index page that displays all urls
+  if (!req.session.user_id) {
+    return res.send("Please <a href='./login'>log in</a> or <a href='./register'>register first</a>");
+  }
   const id = req.session.user_id;
   const userURLData = urlsForUser(id);
   const templateVars = { userURLData: userURLData || {}, user: users[req.session.user_id] };
@@ -100,6 +109,9 @@ app.get("/urls", (req, res) => {//index page that displays all urls
 });
 
 app.get("/urls/new", (req, res) => {
+  if (!req.session.user_id) {
+    return res.redirect("/login");
+  }
   const templateVars = { urls: urlDatabase, user: users[req.session.user_id] };
   res.render("urls_new", templateVars);
 });
@@ -107,14 +119,25 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls", (req, res) => {
   const newShortURL = generateRandomString();
   urlDatabase[newShortURL] = { longURL: req.body.longURL, userID: req.session.user_id };
-  res.redirect("/urls");
+  res.redirect(`/urls/${newShortURL}`);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
+  if (!req.session.user_id) {
+    return res.send("Please <a href='/login'>log in</a> or <a href='/register'>register first</a>");
+  }
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
-  const templateVars = { shortURL, longURL, user: users[req.session.user_id] };
-  res.render("urls_show", templateVars);
+  const userURLData = urlsForUser(req.session.user_id);
+  if (userURLData[shortURL]) {
+    const longURL = urlDatabase[shortURL].longURL;
+    const templateVars = { shortURL, longURL, user: users[req.session.user_id] };
+    return res.render("urls_show", templateVars);
+  }
+  if (urlDatabase[shortURL]) {
+    return res.send("Unauthorized access");
+  }
+  res.send("The shortened URL doesn't exist");
+
 });
 
 
@@ -143,6 +166,9 @@ app.post("/urls/:shortURL/update", (req, res) => { //updating the longURL
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
+  if (!urlDatabase[shortURL]) {
+    return res.send("The requested URL doesn't exist");
+  }
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
