@@ -134,7 +134,14 @@ app.get("/urls/:shortURL", (req, res) => {
 // URL Modifications 
 
 app.post("/urls/:shortURL/delete", (req, res) => { // deleting the shortend URL 
+  if (!req.session.user_id) {
+    return res.send("Please <a href='/login'>log in</a> or <a href='/register'>register first</a>");
+  }
   const shortURL = req.params.shortURL;
+  const userURLData = urlsForUser(req.session.user_id);
+  if (!userURLData[shortURL]) {
+    return res.send("Unauthorized access");
+  }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
